@@ -3,32 +3,36 @@ name: Build Unsigned IPA
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [master, main]
 
 jobs:
-  build:
+  build_ios:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'
+          channel: stable
 
-      - name: Install dependencies
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: Build iOS
-        run: flutter build ios --no-codesign --release
+      - name: Build unsigned IPA
+        run: flutter build ios --release --no-codesign
 
       - name: Package IPA
         run: |
+          mkdir -p output
+          cd build/ios/iphoneos
           mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r random_decider-unsigned.ipa Payload
-          rm -rf Payload
+          cp -r Runner.app Payload/
+          zip -qr ../../../output/random_decider-unsigned.ipa Payload/
+          cd ../../..
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
         with:
-          name: random_decider-unsigned
-          path: random_decider-unsigned.ipa
+          name: random_decider-unsigned-ipa
+          path: output/random_decider-unsigned.ipa
